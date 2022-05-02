@@ -25,12 +25,17 @@ const express = require("express");
 //Importação do módulo do Mongoose
 const mongoose = require("mongoose");
 
+//Importação do módulo do Cors
+const cors = require("cors");
+
 //Criação do app referente ao express
 const app = express();
 
 //Preparar o servidor para receber json
 app.use(express.json());
 
+//Uso do cors para desbloqueio de acesso
+app.use(cors());
 /*
 
 Caminho do banco de dados mongodb
@@ -57,7 +62,16 @@ const default_rote = "/api/cliente";
 
 //Rota para listar os clientes com endpoint listar
 app.get(`${default_rote}/listar`, (req, res) => {
-  res.status(200).send({ output: `Rota GET` });
+  Cliente.find()
+    .then((dados) => {
+      res.status(200).send({ output: dados });
+    })
+
+    .catch((erro) =>
+      res
+        .status(500)
+        .send({ output: `Erro interno ao processar a consulta -> ${erro}` })
+    );
 });
 
 //Rota para cadastrar os clientes com endpoint cadastrar
@@ -76,12 +90,29 @@ app.post(`${default_rote}/cadastrar`, (req, res) => {
 //Rota para atualizar os clientes com endpoint atualizar
 //Passagem de argumentos pela url com o id do cliente
 app.put(`${default_rote}/atualizar/:id`, (req, res) => {
-  res.status(200).send({ output: req.params.id });
+  Cliente.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true },
+    (erro, dados) => {
+      if (erro) {
+        return res.status(500).send({ output: `Não atualizou -> ${erro}` });
+      }
+      res.status(200).send({ output: "Dados atualizados com sucesso!" });
+    }
+  );
 });
 
 //Rota para apagar cliente com endpoint deletar
 app.delete(`${default_rote}/apagar/:id`, (req, res) => {
-  res.status(204).send({ output: req.params.id });
+  Cliente.findByIdAndDelete(req.params.id, (erro, dados) => {
+    if (erro) {
+      return res
+        .status(500)
+        .send({ output: `Erro ao tentar apagar -> ${erro}` });
+    }
+    res.status(204).send({ output: `Apagado!` });
+  });
 });
 
 app.listen(5000, () =>
